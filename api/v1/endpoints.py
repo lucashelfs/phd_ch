@@ -18,7 +18,7 @@ from .models import (
     MinimalHouseFeaturesRequest,
     PredictionResponse,
     ModelInfoResponse,
-    ErrorResponse
+    ErrorResponse,
 )
 
 # Create router for v1 endpoints
@@ -29,7 +29,7 @@ router = APIRouter(prefix="/v1", tags=["v1"])
 async def get_model_info():
     """
     Get information about the loaded model.
-    
+
     Returns model metadata including type, version, features, and
     demographic data availability.
     """
@@ -39,7 +39,7 @@ async def get_model_info():
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to retrieve model information: {str(e)}"
+            detail=f"Failed to retrieve model information: {str(e)}",
         )
 
 
@@ -47,17 +47,17 @@ async def get_model_info():
 async def predict_house_price(house_data: HouseFeaturesRequest):
     """
     Predict house price using all available features.
-    
+
     This endpoint accepts comprehensive house features and returns
     a price prediction with metadata. Demographic data is automatically
     added based on the provided zipcode.
-    
+
     Args:
         house_data: House features including location and property details
-        
+
     Returns:
         Prediction response with price estimate and metadata
-        
+
     Raises:
         HTTPException: For validation errors, missing demographic data,
                       or prediction failures
@@ -65,47 +65,35 @@ async def predict_house_price(house_data: HouseFeaturesRequest):
     try:
         # Convert Pydantic model to dictionary
         house_dict = house_data.dict()
-        
+
         # Make prediction
         prediction_result = predictor.predict(house_dict)
-        
+
         # Return structured response
         return PredictionResponse(**prediction_result)
-        
+
     except DemographicDataError as e:
         raise HTTPException(
             status_code=e.status_code,
-            detail={
-                "error": e.error_code,
-                "message": e.message,
-                "details": e.details
-            }
+            detail={"error": e.error_code, "message": e.message, "details": e.details},
         )
     except PredictionError as e:
         raise HTTPException(
             status_code=e.status_code,
-            detail={
-                "error": e.error_code,
-                "message": e.message,
-                "details": e.details
-            }
+            detail={"error": e.error_code, "message": e.message, "details": e.details},
         )
     except APIException as e:
         raise HTTPException(
             status_code=e.status_code,
-            detail={
-                "error": e.error_code,
-                "message": e.message,
-                "details": e.details
-            }
+            detail={"error": e.error_code, "message": e.message, "details": e.details},
         )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={
                 "error": "INTERNAL_ERROR",
-                "message": f"Unexpected error during prediction: {str(e)}"
-            }
+                "message": f"Unexpected error during prediction: {str(e)}",
+            },
         )
 
 
@@ -113,18 +101,18 @@ async def predict_house_price(house_data: HouseFeaturesRequest):
 async def predict_house_price_minimal(house_data: MinimalHouseFeaturesRequest):
     """
     Predict house price using only core house features (bonus endpoint).
-    
+
     This endpoint accepts only the essential house features and returns
     a price prediction. This demonstrates the model's ability to make
     predictions with reduced feature sets while still incorporating
     demographic data based on zipcode.
-    
+
     Args:
         house_data: Core house features (bedrooms, bathrooms, sqft, etc.)
-        
+
     Returns:
         Prediction response with price estimate and metadata
-        
+
     Raises:
         HTTPException: For validation errors, missing demographic data,
                       or prediction failures
@@ -132,45 +120,33 @@ async def predict_house_price_minimal(house_data: MinimalHouseFeaturesRequest):
     try:
         # Convert Pydantic model to dictionary
         house_dict = house_data.dict()
-        
+
         # Make minimal prediction
         prediction_result = predictor.predict_minimal(house_dict)
-        
+
         # Return structured response
         return PredictionResponse(**prediction_result)
-        
+
     except DemographicDataError as e:
         raise HTTPException(
             status_code=e.status_code,
-            detail={
-                "error": e.error_code,
-                "message": e.message,
-                "details": e.details
-            }
+            detail={"error": e.error_code, "message": e.message, "details": e.details},
         )
     except PredictionError as e:
         raise HTTPException(
             status_code=e.status_code,
-            detail={
-                "error": e.error_code,
-                "message": e.message,
-                "details": e.details
-            }
+            detail={"error": e.error_code, "message": e.message, "details": e.details},
         )
     except APIException as e:
         raise HTTPException(
             status_code=e.status_code,
-            detail={
-                "error": e.error_code,
-                "message": e.message,
-                "details": e.details
-            }
+            detail={"error": e.error_code, "message": e.message, "details": e.details},
         )
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail={
                 "error": "INTERNAL_ERROR",
-                "message": f"Unexpected error during minimal prediction: {str(e)}"
-            }
+                "message": f"Unexpected error during minimal prediction: {str(e)}",
+            },
         )
