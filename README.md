@@ -88,6 +88,7 @@ Assuming Conda has been installed in your environment, you can recreate
 that environment with the following:
 ```sh
 conda env create -f conda_environment.yml
+conda env update -f environment.yml
 # Activate the environment.  Repeat for newly spawned shells/terminals
 conda activate housing
 ```

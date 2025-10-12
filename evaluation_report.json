@@ -1,0 +1,74 @@
+{
+  "model_type": "LGBMRegressor with RobustScaler",
+  "training_samples": 17290,
+  "test_samples": 4323,
+  "features": [
+    "bedrooms",
+    "bathrooms",
+    "sqft_living",
+    "sqft_lot",
+    "floors",
+    "sqft_above",
+    "sqft_basement",
+    "ppltn_qty",
+    "urbn_ppltn_qty",
+    "sbrbn_ppltn_qty",
+    "farm_ppltn_qty",
+    "non_farm_qty",
+    "medn_hshld_incm_amt",
+    "medn_incm_per_prsn_amt",
+    "hous_val_amt",
+    "edctn_less_than_9_qty",
+    "edctn_9_12_qty",
+    "edctn_high_schl_qty",
+    "edctn_some_clg_qty",
+    "edctn_assoc_dgre_qty",
+    "edctn_bchlr_dgre_qty",
+    "edctn_prfsnl_qty",
+    "per_urbn",
+    "per_sbrbn",
+    "per_farm",
+    "per_non_farm",
+    "per_less_than_9",
+    "per_9_to_12",
+    "per_hsd",
+    "per_some_clg",
+    "per_assoc",
+    "per_bchlr",
+    "per_prfsnl"
+  ],
+  "train_metrics": {
+    "mae": 79631.22518554979,
+    "mse": 18621203223.525436,
+    "rmse": 136459.52961785204,
+    "r2": 0.8574710998555042
+  },
+  "test_metrics": {
+    "mae": 92569.93557385128,
+    "mse": 32242178693.39566,
+    "rmse": 179561.07232191408,
+    "r2": 0.7867252289584481
+  },
+  "model_params": {
+    "n_estimators": 100,
+    "max_depth": 6,
+    "learning_rate": 0.1,
+    "subsample": 0.8,
+    "colsample_bytree": 0.8,
+    "random_state": 42,
+    "n_jobs": -1,
+    "objective": "regression",
+    "metric": "rmse",
+    "verbose": -1
+  },
+  "scaler_params": {
+    "quantile_range": [
+      25.0,
+      75.0
+    ],
+    "with_centering": true,
+    "with_scaling": true
+  },
+  "run_id": "6420cfe92d0841f6ab8ad3802e2bf192",
+  "experiment_id": "682056906897196085"
+}
