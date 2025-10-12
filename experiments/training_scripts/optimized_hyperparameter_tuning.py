@@ -20,8 +20,8 @@ import xgboost as xgb
 import lightgbm as lgb
 
 # Configuration
-SALES_PATH = "data/kc_house_data.csv"
-DEMOGRAPHICS_PATH = "data/zipcode_demographics.csv"
+SALES_PATH = "../../data/kc_house_data.csv"
+DEMOGRAPHICS_PATH = "../../data/zipcode_demographics.csv"
 SALES_COLUMN_SELECTION = [
     "price",
     "bedrooms",
@@ -37,7 +37,7 @@ OUTPUT_DIR = "model"
 
 # MLflow Configuration
 EXPERIMENT_NAME = "Real Estate Optimized Split Hyperparameter Tuning"
-TRACKING_URI = "file:./mlruns"
+TRACKING_URI = "file:../../mlruns"
 
 # Optimal data pipeline configuration (from data pipeline experiments)
 OPTIMAL_TEST_SIZE = 0.25  # 75/25 split

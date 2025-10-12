@@ -15,8 +15,10 @@ from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
 from mlflow.models import infer_signature
 
 # Configuration
-SALES_PATH = "data/kc_house_data.csv"  # path to CSV with home sale data
-DEMOGRAPHICS_PATH = "data/zipcode_demographics.csv"  # path to CSV with demographics
+SALES_PATH = "../../data/kc_house_data.csv"  # path to CSV with home sale data
+DEMOGRAPHICS_PATH = (
+    "../../data/zipcode_demographics.csv"  # path to CSV with demographics
+)
 # List of columns (subset) that will be taken from home sale data
 SALES_COLUMN_SELECTION = [
     "price",
@@ -34,7 +36,7 @@ OUTPUT_DIR = "model"  # Directory where output artifacts will be saved
 # MLflow Configuration
 EXPERIMENT_NAME = "Real Estate Price Prediction"
 TRACKING_URI = (
-    "file:./mlruns"  # Local file-based tracking (change to server URI if needed)
+    "file:../../mlruns"  # Local file-based tracking (change to server URI if needed)
 )
 
 

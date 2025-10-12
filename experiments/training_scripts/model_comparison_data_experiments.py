@@ -22,8 +22,8 @@ import xgboost as xgb
 import lightgbm as lgb
 
 # Configuration
-SALES_PATH = "data/kc_house_data.csv"
-DEMOGRAPHICS_PATH = "data/zipcode_demographics.csv"
+SALES_PATH = "../../data/kc_house_data.csv"
+DEMOGRAPHICS_PATH = "../../data/zipcode_demographics.csv"
 SALES_COLUMN_SELECTION = [
     "price",
     "bedrooms",
@@ -39,7 +39,7 @@ OUTPUT_DIR = "model"
 
 # MLflow Configuration
 EXPERIMENT_NAME = "Real Estate Data Pipeline Experiments"
-TRACKING_URI = "file:./mlruns"
+TRACKING_URI = "file:../../mlruns"
 
 # Best parameters from hyperparameter tuning
 BEST_LIGHTGBM_PARAMS = {
