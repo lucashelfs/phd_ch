@@ -5,28 +5,28 @@ This script demonstrates how to use the new modular structure to run
 comprehensive model comparison experiments across KNN, XGBoost, and LightGBM.
 """
 
-import sys
 import os
+import sys
 import time
+from typing import Any, Dict, List, Tuple
+
 import mlflow
-import mlflow.sklearn
 import mlflow.data
-from typing import Dict, Any, List, Tuple
+import mlflow.sklearn
 
 # Add the ml_experiments package to the path
 sys.path.append(os.path.join(os.path.dirname(__file__), "."))
 
 from ml_experiments import (
     DataConfig,
-    ModelConfig,
-    MLflowConfig,
     DataProcessor,
-    ModelFactory,
+    MLflowConfig,
+    ModelConfig,
     ModelEvaluator,
+    ModelFactory,
 )
 from ml_experiments.core.mlflow_utils import (
     setup_mlflow,
-    create_run_name,
 )
 
 
@@ -201,23 +201,35 @@ def test_single_model(
 
         mlflow.log_metric("training_time", training_time)
 
-        # Log dataset information as parameters (simpler approach)
-        print("   Logging dataset information...")
-        mlflow.log_params(
-            {
-                "dataset_source": "kc_house_data",
-                "train_samples": len(X_train),
-                "test_samples": len(X_test),
-                "total_features": len(X_train.columns),
-                "target_variable": "price",
-            }
+        # Log datasets to MLflow
+        print("   Logging datasets to MLflow...")
+
+        # Create and log training dataset
+        train_dataset = mlflow.data.from_pandas(
+            X_train.join(y_train),
+            source="kc_house_data_processed",
+            name="training_data",
+            targets="price",
         )
+        mlflow.log_input(train_dataset, context="training")
+
+        # Create and log test dataset
+        test_dataset = mlflow.data.from_pandas(
+            X_test.join(y_test),
+            source="kc_house_data_processed",
+            name="test_data",
+            targets="price",
+        )
+        mlflow.log_input(test_dataset, context="validation")
+
+        print("   Datasets logged successfully")
 
         # Log comprehensive model with all metadata
         print("   Logging complete MLflow model with metadata...")
 
-        import pickle
         import json
+        import pickle
+
         from mlflow.models import infer_signature
 
         # 1. Create proper model signature from training data
@@ -239,7 +251,7 @@ def test_single_model(
         )
 
         # Log the saved model as artifact
-        mlflow.log_artifacts(model_path)
+        mlflow.log_artifacts(model_path, artifact_path="model")
 
         # Register the model
         model_uri = f"runs:/{mlflow.active_run().info.run_id}/model"
@@ -314,25 +326,25 @@ def test_single_model(
         mlflow.log_artifact("model_metadata.json")
 
         # 5. Log model backup as pickle (for compatibility)
-        with open("model_backup.pkl", "wb") as f:
-            pickle.dump(pipeline, f)
-        mlflow.log_artifact("model_backup.pkl")
+        # with open("model_backup.pkl", "wb") as f:
+        #     pickle.dump(pipeline, f)
+        # mlflow.log_artifact("model_backup.pkl")
 
         # 6. Create and log environment requirements
-        try:
-            import subprocess
+        # try:
+        #     import subprocess
 
-            result = subprocess.run(["pip", "freeze"], capture_output=True, text=True)
-            with open("requirements.txt", "w") as f:
-                f.write(result.stdout)
-            mlflow.log_artifact("requirements.txt")
-            print("   Environment requirements logged")
-        except Exception as e:
-            print(f"   Warning: Could not log requirements: {e}")
+        #     result = subprocess.run(["pip", "freeze"], capture_output=True, text=True)
+        #     with open("requirements.txt", "w") as f:
+        #         f.write(result.stdout)
+        #     mlflow.log_artifact("requirements.txt")
+        #     print("   Environment requirements logged")
+        # except Exception as e:
+        #     print(f"   Warning: Could not log requirements: {e}")
 
-        print("   Complete MLflow model with metadata logged successfully!")
-        print(f"   Model URI: {model_uri}")
-        print(f"   Run ID: {run_id}")
+        # print("   Complete MLflow model with metadata logged successfully!")
+        # print(f"   Model URI: {model_uri}")
+        # print(f"   Run ID: {run_id}")
 
         return results
 
@@ -390,7 +402,7 @@ def display_comparison_results(all_results: List[Dict[str, Any]]) -> None:
         print(f"Training time: {best_model['training_time']:.2f} seconds")
 
         # Performance interpretation
-        print(f"\nPerformance Interpretation:")
+        print("\nPerformance Interpretation:")
         if summary["test_r2"] >= 0.8:
             print("   Excellent model performance - explains >80% of variance")
         elif summary["test_r2"] >= 0.7:
@@ -459,7 +471,7 @@ def run_comprehensive_model_comparison():
         if all_results:
             display_comparison_results(all_results)
 
-            print(f"\n" + "=" * 80)
+            print("\n" + "=" * 80)
             print("EXPERIMENT SUMMARY")
             print("=" * 80)
             print(f"Total models tested: {len(all_results)}")
