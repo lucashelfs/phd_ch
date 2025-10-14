@@ -238,29 +238,21 @@ def test_single_model(
         signature = infer_signature(input_example, y_pred_example)
         print(f"   Model signature created: {signature}")
 
-        # 2. Save the complete model with all metadata (PRIMARY MODEL LOGGING)
+        # 2. Log the complete model with all metadata (PRIMARY MODEL LOGGING)
         model_name = f"{model_type}_house_price_model"
 
-        # Get the MLflow run's artifact directory
-        artifact_uri = mlflow.get_artifact_uri()
-        # Convert file:// URI to local path and create model path
-        artifact_path = artifact_uri.replace("file://", "")
-        model_artifact_path = os.path.join(artifact_path, "model")
-
-        # Save model directly to the MLflow run's artifact directory
-        mlflow.sklearn.save_model(
+        # Log model directly to MLflow (this will appear in UI)
+        model_info = mlflow.sklearn.log_model(
             sk_model=pipeline,
-            path=model_artifact_path,
+            artifact_path="model",
             signature=signature,
             input_example=input_example,
+            registered_model_name=model_name,
         )
 
-        # Register the model using the artifact path
-        model_uri = f"runs:/{mlflow.active_run().info.run_id}/model"
-        mlflow.register_model(model_uri, model_name)
-
-        print(f"   MLflow model saved and logged: {model_uri}")
+        print(f"   MLflow model logged: {model_info.model_uri}")
         print(f"   Model registered as: {model_name}")
+        print(f"   Model UUID: {model_info.model_uuid}")
 
         # 3. Set comprehensive experiment tags
         mlflow.set_tags(
@@ -275,7 +267,7 @@ def test_single_model(
                 "version": "1.0",
                 "author": "ml_experiments_framework",
                 "purpose": "house_price_prediction",
-                "model_uri": model_uri,
+                "model_uri": model_info.model_uri,
                 "registered_model": model_name,
             }
         )
@@ -285,7 +277,7 @@ def test_single_model(
         model_metadata = {
             "model_info": {
                 "model_type": model_type,
-                "model_uri": model_uri,
+                "model_uri": model_info.model_uri,
                 "registered_name": model_name,
                 "artifact_path": "model",
                 "run_id": run_id,
