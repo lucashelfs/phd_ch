@@ -240,20 +240,22 @@ def test_single_model(
 
         # 2. Save the complete model with all metadata (PRIMARY MODEL LOGGING)
         model_name = f"{model_type}_house_price_model"
-        model_path = f"model_{model_type}"
 
-        # Save model with proper MLmodel file structure
+        # Get the MLflow run's artifact directory
+        artifact_uri = mlflow.get_artifact_uri()
+        # Convert file:// URI to local path and create model path
+        artifact_path = artifact_uri.replace("file://", "")
+        model_artifact_path = os.path.join(artifact_path, "model")
+
+        # Save model directly to the MLflow run's artifact directory
         mlflow.sklearn.save_model(
             sk_model=pipeline,
-            path=model_path,
+            path=model_artifact_path,
             signature=signature,
             input_example=input_example,
         )
 
-        # Log the saved model as artifact
-        mlflow.log_artifacts(model_path, artifact_path="model")
-
-        # Register the model
+        # Register the model using the artifact path
         model_uri = f"runs:/{mlflow.active_run().info.run_id}/model"
         mlflow.register_model(model_uri, model_name)
 
@@ -324,27 +326,6 @@ def test_single_model(
         with open("model_metadata.json", "w") as f:
             json.dump(model_metadata, f, indent=2)
         mlflow.log_artifact("model_metadata.json")
-
-        # 5. Log model backup as pickle (for compatibility)
-        # with open("model_backup.pkl", "wb") as f:
-        #     pickle.dump(pipeline, f)
-        # mlflow.log_artifact("model_backup.pkl")
-
-        # 6. Create and log environment requirements
-        # try:
-        #     import subprocess
-
-        #     result = subprocess.run(["pip", "freeze"], capture_output=True, text=True)
-        #     with open("requirements.txt", "w") as f:
-        #         f.write(result.stdout)
-        #     mlflow.log_artifact("requirements.txt")
-        #     print("   Environment requirements logged")
-        # except Exception as e:
-        #     print(f"   Warning: Could not log requirements: {e}")
-
-        # print("   Complete MLflow model with metadata logged successfully!")
-        # print(f"   Model URI: {model_uri}")
-        # print(f"   Run ID: {run_id}")
 
         return results
 
