@@ -5,19 +5,17 @@ This module creates and configures the FastAPI application with
 all endpoints, middleware, and error handling.
 """
 
-from datetime import datetime
-from typing import Dict, Any
-
-from fastapi import FastAPI, Request, HTTPException, status
-from fastapi.responses import JSONResponse
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, HTTPException, Request, status
 from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from .core.config import settings
-from .core.predictor import predictor
 from .core.exceptions import APIException
+from .core.predictor import predictor
 from .v1.endpoints import router as v1_router
-from .v1.models import HealthResponse, ErrorResponse
+from .v1.models import ErrorResponse, HealthResponse
+from .v2.endpoints import router as v2_router
 
 # Create FastAPI application
 app = FastAPI(
@@ -46,10 +44,8 @@ async def api_exception_handler(request: Request, exc: APIException):
     return JSONResponse(
         status_code=exc.status_code,
         content=ErrorResponse(
-            error=exc.error_code,
-            message=exc.message,
-            details=exc.details
-        ).dict()
+            error=exc.error_code, message=exc.message, details=exc.details
+        ).dict(),
     )
 
 
@@ -61,8 +57,8 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         content=ErrorResponse(
             error="VALIDATION_ERROR",
             message="Request validation failed",
-            details={"validation_errors": exc.errors()}
-        ).dict()
+            details={"validation_errors": exc.errors()},
+        ).dict(),
     )
 
 
@@ -74,19 +70,16 @@ async def http_exception_handler(request: Request, exc: HTTPException):
         error_content = ErrorResponse(
             error=exc.detail.get("error", "HTTP_ERROR"),
             message=exc.detail.get("message", str(exc.detail)),
-            details=exc.detail.get("details", {})
+            details=exc.detail.get("details", {}),
         ).dict()
     else:
         error_content = ErrorResponse(
             error="HTTP_ERROR",
             message=str(exc.detail),
-            details={"status_code": exc.status_code}
+            details={"status_code": exc.status_code},
         ).dict()
-    
-    return JSONResponse(
-        status_code=exc.status_code,
-        content=error_content
-    )
+
+    return JSONResponse(status_code=exc.status_code, content=error_content)
 
 
 @app.exception_handler(Exception)
@@ -95,11 +88,10 @@ async def general_exception_handler(request: Request, exc: Exception):
     error_response = ErrorResponse(
         error="INTERNAL_ERROR",
         message="An unexpected error occurred",
-        details={"exception_type": type(exc).__name__} if settings.debug else {}
+        details={"exception_type": type(exc).__name__} if settings.debug else {},
     )
     return JSONResponse(
-        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        content=error_response.dict()
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, content=error_response.dict()
     )
 
 
@@ -108,23 +100,28 @@ async def general_exception_handler(request: Request, exc: Exception):
 async def root():
     """
     API root endpoint with basic information.
-    
+
     Returns API metadata and available versions.
     """
     return {
         "name": settings.api_title,
         "version": settings.api_version,
         "description": settings.api_description,
-        "available_versions": ["v1"],
+        "available_versions": ["v1", "v2"],
         "endpoints": {
             "health": "/health",
             "docs": "/docs" if settings.debug else "disabled",
             "v1": {
                 "info": "/v1/info",
                 "predict": "/v1/predict",
-                "predict_minimal": "/v1/predict/minimal"
-            }
-        }
+                "predict_minimal": "/v1/predict/minimal",
+            },
+            "v2": {
+                "info": "/v2/info",
+                "predict": "/v2/predict",
+                "predict_minimal": "/v2/predict/minimal",
+            },
+        },
     }
 
 
@@ -133,14 +130,14 @@ async def root():
 async def health_check():
     """
     Health check endpoint for monitoring and load balancers.
-    
+
     Returns service status and component health information.
     """
     try:
         # Check if model and demographics are loaded
         model_loaded = predictor.model is not None
         demographics_loaded = predictor.demographics_data is not None
-        
+
         # Determine overall status
         if model_loaded and demographics_loaded:
             status_value = "healthy"
@@ -148,28 +145,29 @@ async def health_check():
             status_value = "degraded"  # Model loaded but no demographics
         else:
             status_value = "unhealthy"  # Model not loaded
-        
+
         return HealthResponse(
             status=status_value,
             version=settings.api_version,
             model_loaded=model_loaded,
-            demographics_loaded=demographics_loaded
+            demographics_loaded=demographics_loaded,
         )
-        
-    except Exception as e:
+
+    except Exception:
         return JSONResponse(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             content=HealthResponse(
                 status="unhealthy",
                 version=settings.api_version,
                 model_loaded=False,
-                demographics_loaded=False
-            ).dict()
+                demographics_loaded=False,
+            ).dict(),
         )
 
 
-# Include v1 router
+# Include v1 and v2 routers
 app.include_router(v1_router)
+app.include_router(v2_router)
 
 
 # Startup event
@@ -177,19 +175,23 @@ app.include_router(v1_router)
 async def startup_event():
     """
     Application startup event.
-    
+
     Performs initialization tasks and validates system readiness.
     """
     print(f"Starting {settings.api_title} v{settings.api_version}")
-    
+
     # Validate model and data loading
     try:
         model_info = predictor.get_model_info()
-        print(f"Model loaded: {model_info['model_type']} with {model_info['total_features']} features")
-        print(f"Demographics data: {model_info['demographics_zipcodes']} zipcodes available")
+        print(
+            f"Model loaded: {model_info['model_type']} with {model_info['total_features']} features"
+        )
+        print(
+            f"Demographics data: {model_info['demographics_zipcodes']} zipcodes available"
+        )
     except Exception as e:
         print(f"Warning: Model validation failed: {e}")
-    
+
     print("API startup complete")
 
 
@@ -198,7 +200,7 @@ async def startup_event():
 async def shutdown_event():
     """
     Application shutdown event.
-    
+
     Performs cleanup tasks before application termination.
     """
     print(f"Shutting down {settings.api_title}")
@@ -206,11 +208,11 @@ async def shutdown_event():
 
 if __name__ == "__main__":
     import uvicorn
-    
+
     uvicorn.run(
         "api.main:app",
         host=settings.host,
         port=settings.port,
         reload=settings.debug,
-        workers=settings.workers if not settings.debug else 1
+        workers=settings.workers if not settings.debug else 1,
     )
