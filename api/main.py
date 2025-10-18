@@ -14,7 +14,7 @@ from .core.config import settings
 from .core.exceptions import APIException
 from .core.predictor import predictor
 from .v1.endpoints import router as v1_router
-from .v1.models import ErrorResponse, HealthResponse
+from .core.models import ErrorResponse, HealthResponse
 
 # Create FastAPI application
 app = FastAPI(

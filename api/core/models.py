@@ -1,14 +1,14 @@
 """
-Pydantic models for API v1 request and response validation.
+Pydantic models for API request and response validation.
 
-This module defines the data models used for request validation
-and response formatting in API version 1.
+This module defines the shared data models used for request validation
+and response formatting across all API versions.
 """
 
 from datetime import datetime
 from typing import Any, Dict, List, Optional
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 
 
 class HouseFeaturesRequest(BaseModel):
@@ -54,24 +54,26 @@ class HouseFeaturesRequest(BaseModel):
         None, ge=500, le=1000000, description="Lot size of 15 nearest neighbors"
     )
 
-    @validator("zipcode")
+    @field_validator("zipcode")
+    @classmethod
     def validate_zipcode(cls, v):
         """Validate zipcode format."""
         if not v.isdigit():
             raise ValueError("Zipcode must contain only digits")
         return v
 
-    @validator("yr_renovated")
-    def validate_renovation_year(cls, v, values):
+    @field_validator("yr_renovated")
+    @classmethod
+    def validate_renovation_year(cls, v, info):
         """Validate renovation year is after build year."""
         if v and v > 0:
-            yr_built = values.get("yr_built")
+            yr_built = info.data.get("yr_built")
             if yr_built and v < yr_built:
                 raise ValueError("Renovation year cannot be before build year")
         return v
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "bedrooms": 4,
                 "bathrooms": 2.5,
@@ -93,6 +95,7 @@ class HouseFeaturesRequest(BaseModel):
                 "sqft_lot15": 4599,
             }
         }
+    )
 
 
 class MinimalHouseFeaturesRequest(BaseModel):
@@ -116,15 +119,16 @@ class MinimalHouseFeaturesRequest(BaseModel):
     # Still need zipcode for demographic enrichment
     zipcode: str = Field(..., min_length=5, max_length=5, description="5-digit zipcode")
 
-    @validator("zipcode")
+    @field_validator("zipcode")
+    @classmethod
     def validate_zipcode(cls, v):
         """Validate zipcode format."""
         if not v.isdigit():
             raise ValueError("Zipcode must contain only digits")
         return v
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "bedrooms": 4,
                 "bathrooms": 2.5,
@@ -136,6 +140,7 @@ class MinimalHouseFeaturesRequest(BaseModel):
                 "zipcode": "98028",
             }
         }
+    )
 
 
 class PredictionResponse(BaseModel):
@@ -157,8 +162,8 @@ class PredictionResponse(BaseModel):
         None, description="Number of core features used (minimal endpoint)"
     )
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "prediction": 450000.0,
                 "model_version": "1.0.0",
@@ -168,6 +173,7 @@ class PredictionResponse(BaseModel):
                 "timestamp": "2025-01-06T23:26:57Z",
             }
         }
+    )
 
 
 class ModelInfoResponse(BaseModel):
@@ -183,8 +189,8 @@ class ModelInfoResponse(BaseModel):
         ..., description="Number of zipcodes with demographic data"
     )
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "model_type": "KNeighborsRegressor",
                 "model_version": "1.0.0",
@@ -193,6 +199,7 @@ class ModelInfoResponse(BaseModel):
                 "demographics_zipcodes": 70,
             }
         }
+    )
 
 
 class HealthResponse(BaseModel):
@@ -211,8 +218,8 @@ class HealthResponse(BaseModel):
         ..., description="Whether demographic data is loaded"
     )
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "status": "healthy",
                 "timestamp": "2025-01-06T23:26:57Z",
@@ -221,6 +228,7 @@ class HealthResponse(BaseModel):
                 "demographics_loaded": True,
             }
         }
+    )
 
 
 class ErrorResponse(BaseModel):
@@ -236,8 +244,8 @@ class ErrorResponse(BaseModel):
         description="Error timestamp",
     )
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "error": "VALIDATION_ERROR",
                 "message": "Invalid input data",
@@ -245,3 +253,4 @@ class ErrorResponse(BaseModel):
                 "timestamp": "2025-01-06T23:26:57Z",
             }
         }
+    )

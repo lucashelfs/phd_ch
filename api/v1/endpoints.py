@@ -9,7 +9,7 @@ from fastapi import APIRouter, HTTPException, status
 
 from ..core.exceptions import APIException, DemographicDataError, PredictionError
 from ..core.predictor import predictor
-from .models import (
+from ..core.models import (
     HouseFeaturesRequest,
     MinimalHouseFeaturesRequest,
     ModelInfoResponse,

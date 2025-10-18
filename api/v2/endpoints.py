@@ -9,7 +9,7 @@ from fastapi import APIRouter, HTTPException, status
 
 from ..core.exceptions import DemographicDataError, PredictionError
 from ..core.mlflow_predictor import MLflowModelLoadError, get_mlflow_predictor
-from ..v1.models import (
+from ..core.models import (
     HouseFeaturesRequest,
     MinimalHouseFeaturesRequest,
     ModelInfoResponse,
