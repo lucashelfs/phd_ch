@@ -90,14 +90,12 @@ services:
     command: >
       /bin/bash -c "
         pip install --no-cache-dir psycopg2-binary boto3 &&
-        mlflow server \
-          --backend-store-uri ${MLFLOW_BACKEND_STORE_URI} \
-          --default-artifact-root ${MLFLOW_DEFAULT_ARTIFACT_ROOT} \
-          --host ${MLFLOW_HOST} \
-          --port ${MLFLOW_PORT}
+        mlflow server --backend-store-uri ${MLFLOW_BACKEND_STORE_URI} --default-artifact-root ${MLFLOW_DEFAULT_ARTIFACT_ROOT} --host ${MLFLOW_HOST} --port ${MLFLOW_PORT} --disable-security-middleware
       "
+
     ports:
       - "${MLFLOW_PORT}:${MLFLOW_PORT}"
+
     healthcheck:
       test:
         [
@@ -109,6 +107,35 @@ services:
       interval: 10s
       timeout: 5s
       retries: 30
+    networks:
+      - real-estate-network
+
+  real-estate-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: real-estate-api
+    depends_on:
+      mlflow:
+        condition: service_healthy
+    environment:
+      # MLflow connection settings
+      MLFLOW_TRACKING_URI: ${MLFLOW_TRACKING_URI}
+
+      # S3/MinIO settings for artifact access
+      MLFLOW_S3_ENDPOINT_URL: ${MLFLOW_S3_ENDPOINT_URL}
+      AWS_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
+      AWS_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
+      AWS_DEFAULT_REGION: ${AWS_DEFAULT_REGION}
+      MLFLOW_S3_IGNORE_TLS: "true"
+    ports:
+      - "${API_PORT}:8000"
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      start_period: 5s
+      retries: 3
     networks:
       - real-estate-network
 
