@@ -5,20 +5,15 @@ This module defines the FastAPI endpoints for version 1 of the API,
 including prediction endpoints and model information.
 """
 
-from typing import Dict, Any
-
 from fastapi import APIRouter, HTTPException, status
-from fastapi.responses import JSONResponse
 
-from ..core.config import settings
+from ..core.exceptions import APIException, DemographicDataError, PredictionError
 from ..core.predictor import predictor
-from ..core.exceptions import APIException, PredictionError, DemographicDataError
 from .models import (
     HouseFeaturesRequest,
     MinimalHouseFeaturesRequest,
-    PredictionResponse,
     ModelInfoResponse,
-    ErrorResponse,
+    PredictionResponse,
 )
 
 # Create router for v1 endpoints
