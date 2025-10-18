@@ -6,9 +6,10 @@ and validation for production deployment.
 """
 
 from pathlib import Path
+from typing import Optional
 
-from pydantic import validator
-from pydantic_settings import BaseSettings
+from pydantic import field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
@@ -34,6 +35,7 @@ class Settings(BaseSettings):
     mlflow_tracking_uri: str = "http://mlflow:5000"
     mlflow_experiment_id: str = "1"
     champion_metric: str = "test_r2"
+    champion_model_mlflow_uri: Optional[str] = None
 
     # Logging Configuration
     log_level: str = "INFO"
@@ -43,14 +45,16 @@ class Settings(BaseSettings):
     max_request_size: int = 1024 * 1024  # 1MB
     request_timeout: int = 30  # seconds
 
-    @validator("demographics_data_path")
+    @field_validator("demographics_data_path")
+    @classmethod
     def validate_file_paths(cls, v):
         """Validate that required files exist."""
         if not Path(v).exists():
             raise ValueError(f"Required file not found: {v}")
         return v
 
-    @validator("log_level")
+    @field_validator("log_level")
+    @classmethod
     def validate_log_level(cls, v):
         """Validate log level."""
         valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
@@ -58,10 +62,9 @@ class Settings(BaseSettings):
             raise ValueError(f"Invalid log level: {v}. Must be one of {valid_levels}")
         return v.upper()
 
-    class Config:
-        env_prefix = "API_"
-        case_sensitive = False
-        protected_namespaces = ("settings_",)
+    model_config = SettingsConfigDict(
+        env_prefix="", case_sensitive=False, protected_namespaces=("settings_",)
+    )
 
 
 # Global settings instance

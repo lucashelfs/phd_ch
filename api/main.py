@@ -15,7 +15,6 @@ from .core.exceptions import APIException
 from .core.predictor import predictor
 from .v1.endpoints import router as v1_router
 from .v1.models import ErrorResponse, HealthResponse
-from .v2.endpoints import router as v2_router
 
 # Create FastAPI application
 app = FastAPI(
@@ -95,6 +94,15 @@ async def general_exception_handler(request: Request, exc: Exception):
     )
 
 
+# Determine available versions
+def get_available_versions():
+    """Get list of available API versions."""
+    versions = ["v1"]
+    if settings.champion_model_mlflow_uri:
+        versions.append("v2")
+    return versions
+
+
 # Root endpoint
 @app.get("/", tags=["root"])
 async def root():
@@ -103,26 +111,66 @@ async def root():
 
     Returns API metadata and available versions.
     """
+    available_versions = get_available_versions()
+    endpoints = {
+        "health": "/health",
+        "versions": "/versions",
+        "docs": "/docs" if settings.debug else "disabled",
+        "v1": {
+            "info": "/v1/info",
+            "predict": "/v1/predict",
+            "predict_minimal": "/v1/predict/minimal",
+        },
+    }
+
+    if "v2" in available_versions:
+        endpoints["v2"] = {
+            "info": "/v2/info",
+            "predict": "/v2/predict",
+            "predict_minimal": "/v2/predict/minimal",
+        }
+
     return {
         "name": settings.api_title,
         "version": settings.api_version,
         "description": settings.api_description,
-        "available_versions": ["v1", "v2"],
-        "endpoints": {
-            "health": "/health",
-            "docs": "/docs" if settings.debug else "disabled",
-            "v1": {
-                "info": "/v1/info",
-                "predict": "/v1/predict",
-                "predict_minimal": "/v1/predict/minimal",
-            },
-            "v2": {
-                "info": "/v2/info",
-                "predict": "/v2/predict",
-                "predict_minimal": "/v2/predict/minimal",
-            },
+        "available_versions": available_versions,
+        "endpoints": endpoints,
+    }
+
+
+# Versions endpoint
+@app.get("/versions", tags=["root"])
+async def get_versions():
+    """
+    Get information about available API versions and their status.
+
+    Returns detailed information about which versions are active
+    and what type of models they use.
+    """
+    versions_info = {
+        "available_versions": get_available_versions(),
+        "v1": {
+            "status": "active",
+            "model_type": "pickle",
+            "description": "Original API using pickle-based models",
         },
     }
+
+    if settings.champion_model_mlflow_uri:
+        versions_info["v2"] = {
+            "status": "active",
+            "model_type": "mlflow",
+            "model_uri": settings.champion_model_mlflow_uri,
+            "description": "MLflow-based API using champion models",
+        }
+    else:
+        versions_info["v2"] = {
+            "status": "disabled",
+            "reason": "CHAMPION_MODEL_MLFLOW_URI not configured",
+        }
+
+    return versions_info
 
 
 # Health check endpoint
@@ -165,9 +213,17 @@ async def health_check():
         )
 
 
-# Include v1 and v2 routers
+# Include v1 router (always available)
 app.include_router(v1_router)
-app.include_router(v2_router)
+
+# Conditionally include v2 router only if MLflow URI is configured
+if settings.champion_model_mlflow_uri:
+    from .v2.endpoints import router as v2_router
+
+    app.include_router(v2_router)
+    print("V2 API enabled with MLflow model")
+else:
+    print("V2 API disabled - CHAMPION_MODEL_MLFLOW_URI not configured")
 
 
 # Startup event

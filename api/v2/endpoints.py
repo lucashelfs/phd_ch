@@ -8,7 +8,7 @@ instead of pickle files, while maintaining the same API structure as V1.
 from fastapi import APIRouter, HTTPException, status
 
 from ..core.exceptions import DemographicDataError, PredictionError
-from ..core.mlflow_predictor import MLflowModelLoadError, mlflow_predictor
+from ..core.mlflow_predictor import MLflowModelLoadError, get_mlflow_predictor
 from ..v1.models import (
     HouseFeaturesRequest,
     MinimalHouseFeaturesRequest,
@@ -29,7 +29,8 @@ async def get_model_info():
     MLflow run details and performance metrics.
     """
     try:
-        model_info = mlflow_predictor.get_model_info()
+        predictor = get_mlflow_predictor()
+        model_info = predictor.get_model_info()
         return ModelInfoResponse(**model_info)
     except Exception as e:
         raise HTTPException(
@@ -64,7 +65,8 @@ async def predict_house_price(request: HouseFeaturesRequest):
         house_data = request.dict()
 
         # Make prediction using MLflow predictor
-        result = mlflow_predictor.predict(house_data)
+        predictor = get_mlflow_predictor()
+        result = predictor.predict(house_data)
 
         return PredictionResponse(**result)
 
@@ -125,7 +127,8 @@ async def predict_house_price_minimal(request: MinimalHouseFeaturesRequest):
         house_data = request.dict()
 
         # Make minimal prediction using MLflow predictor
-        result = mlflow_predictor.predict_minimal(house_data)
+        predictor = get_mlflow_predictor()
+        result = predictor.predict_minimal(house_data)
 
         return PredictionResponse(**result)
 
