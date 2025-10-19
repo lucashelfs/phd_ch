@@ -5,12 +5,16 @@ This module provides common functionality for testing the Real Estate API
 endpoints, including data loading, API client, and response formatting.
 """
 
+import os
 import time
 from typing import Dict, List, Optional, Tuple, Any
 import pandas as pd
 import requests
 from requests.adapters import HTTPAdapter
 from urllib3.util.retry import Retry
+
+_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
+_REPO_ROOT = os.path.dirname(_SCRIPT_DIR)
 
 
 class APIClient:
@@ -324,4 +328,4 @@ def check_api_availability(client: APIClient) -> Tuple[bool, bool]:
 DEFAULT_API_URL = "http://localhost:8000"
 DEFAULT_TIMEOUT = 30
 DEFAULT_SAMPLE_SIZE = 10
-DATA_FILE_PATH = "data/future_unseen_examples.csv"
+DATA_FILE_PATH = os.path.join(_REPO_ROOT, "data", "future_unseen_examples.csv")

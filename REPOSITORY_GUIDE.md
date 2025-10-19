@@ -317,19 +317,56 @@ The new model is now available through V2 endpoints while V1 continues serving t
 
 ## 7. Model Comparison Framework
 
-*[PLACEHOLDER SECTION]*
+The repository includes a comprehensive API testing and comparison framework located in the `examples/` directory. This framework provides automated testing tools to validate API functionality and compare model performance between different versions.
 
-This section will cover:
-- Comparing baseline (V1) vs. champion (V2) model performance
-- A/B testing methodologies
-- Performance metrics evaluation
-- Statistical significance testing
-- Model drift detection
+### Available Testing Scripts
 
-Available comparison tools:
-- `experiments/model_performance_comparison.py`
-- Performance visualization scripts
-- Automated evaluation pipelines
+**Core Testing Tools:**
+- `examples/test_v1_api.py` - Tests V1 (pickle-based) API endpoints
+- `examples/test_v2_api.py` - Tests V2 (MLflow-based) API endpoints
+- `examples/compare_api_versions.py` - Comprehensive V1 vs V2 comparison
+- `examples/api_test_utils.py` - Shared utilities and helper functions
+
+**Key Features:**
+- **Real Data Testing**: Uses actual house examples from `data/future_unseen_examples.csv`
+- **Comprehensive Coverage**: Tests both full and minimal prediction endpoints
+- **Statistical Analysis**: Provides detailed comparison metrics and agreement patterns
+- **Performance Monitoring**: Measures response times and success rates
+- **Error Handling**: Graceful handling of API unavailability and validation errors
+
+### Usage Examples
+
+```bash
+# Test V1 API functionality
+cd examples
+python test_v1_api.py
+
+# Test V2 API (requires MLflow champion model)
+python test_v2_api.py
+
+# Compare both APIs side-by-side
+python compare_api_versions.py
+```
+
+### Comparison Capabilities
+
+The framework provides:
+- **Prediction Accuracy Comparison**: Side-by-side analysis of V1 vs V2 predictions
+- **Performance Metrics**: Response time analysis and throughput comparison
+- **Agreement Analysis**: Statistical evaluation of model consensus
+- **Feature Usage Comparison**: Analysis of feature importance between models
+- **Success Rate Monitoring**: Tracking of API reliability and availability
+
+### Documentation
+
+For detailed usage instructions, configuration options, and troubleshooting guidance, see `examples/README.md`. The documentation includes:
+- Step-by-step usage instructions
+- Configuration options and customization
+- Output interpretation guidelines
+- Troubleshooting common issues
+- Extension possibilities for custom testing scenarios
+
+This testing framework enables continuous validation of API functionality and provides quantitative insights for model performance evaluation and A/B testing scenarios.
 
 ## API Versioning Strategy
 

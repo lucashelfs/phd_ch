@@ -68,8 +68,9 @@ def prepare_data() -> tuple:
     try:
         data_config = DataConfig(
             scaler_type="robust",
-            test_size=0.2,
+            test_size=0.3,
             remove_outliers=True,
+            outlier_type="iqr_loose",
             feature_engineering="none",
             random_state=42,
         )
@@ -245,7 +246,7 @@ def run_training_pipeline(model_types: Optional[List[str]] = None) -> Dict[str, 
         RuntimeError: If pipeline fails
     """
     if model_types is None:
-        model_types = ["lightgbm", "xgboost"]
+        model_types = ["lightgbm", "xgboost", "knn"]
 
     try:
         # Setup environment
