@@ -238,19 +238,36 @@ Access MinIO console at: http://localhost:9001
 
 ## 5. Model Development Workflow
 
-*[PLACEHOLDER SECTION]*
+The repository provides two training scripts that integrate with the MLflow ecosystem for experiment tracking, model storage, and artifact management:
 
-This section will cover:
-- Creating new experiments in MLflow
-- Training models with different algorithms (LightGBM, XGBoost)
-- Hyperparameter tuning and cross-validation
-- Model evaluation and comparison
-- Registering champion models
+### Available Training Scripts
 
-Available training scripts:
-- `create_model_lightgbm.py`
-- `create_model_xgboost.py`
-- `train_with_docker_mlflow.py`
+**`pipelines/train_docker_mlflow_production.py`**
+- Production-ready training pipeline using the ml_experiments module
+- Trains multiple model types (LightGBM, XGBoost, KNN) with automated comparison
+- Handles complete MLflow setup, experiment tracking, and model registration
+- Provides comprehensive evaluation metrics and automatic champion model selection
+- Integrates with Docker MLflow environment for seamless artifact storage
+
+**`pipelines/baseline_model_pipeline.py`**
+- Simplified baseline training script based on the original create_model.py
+- Trains a single KNN model with RobustScaler preprocessing
+- Logs experiments to MLflow while maintaining backward compatibility with pickle artifacts
+- Ideal for establishing baseline performance and validating the MLflow integration
+
+### Usage
+
+Both scripts automatically handle MLflow configuration, experiment creation, and artifact storage in the containerized environment. They log comprehensive metrics, parameters, and model artifacts to enable easy model comparison and deployment through the V2 API endpoints.
+
+```bash
+# Run production training pipeline
+python pipelines/train_docker_mlflow_production.py
+
+# Run baseline model training
+python pipelines/baseline_model_pipeline.py
+```
+
+Models trained through these scripts are automatically registered in MLflow Model Registry and can be deployed by updating the `CHAMPION_MODEL_MLFLOW_URI` environment variable.
 
 ## 6. Model Deployment Process
 
