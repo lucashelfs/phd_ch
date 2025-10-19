@@ -100,13 +100,54 @@ curl http://localhost:8000/versions
 
 ### Test API Endpoints
 
+**Important Note about Prediction Endpoints:**
+- **Full prediction endpoints** (`/v1/predict`, `/v2/predict`) require ALL house features including location data (lat/long), property details, and year information
+- **Minimal prediction endpoints** (`/v1/predict/minimal`, `/v2/predict/minimal`) only require core features: bedrooms, bathrooms, square footage, floors, and zipcode
+- Both endpoint types automatically enrich data with demographic information based on the provided zipcode
+
+**Root Endpoints:**
+```bash
+# Get API root information and available endpoints
+curl http://localhost:8000/
+
+# Check service health
+curl http://localhost:8000/health
+
+# Get available API versions
+curl http://localhost:8000/versions
+```
+
 **V1 Endpoints (Pickle-based models):**
 ```bash
 # Get API information
 curl http://localhost:8000/v1/info
 
-# Test prediction with full features
+# Test prediction with FULL features (all required fields)
 curl -X POST http://localhost:8000/v1/predict \
+  -H "Content-Type: application/json" \
+  -d '{
+    "bedrooms": 3,
+    "bathrooms": 2.5,
+    "sqft_living": 2000,
+    "sqft_lot": 8000,
+    "floors": 2,
+    "waterfront": 0,
+    "view": 0,
+    "condition": 3,
+    "grade": 7,
+    "sqft_above": 1500,
+    "sqft_basement": 500,
+    "yr_built": 2000,
+    "yr_renovated": 0,
+    "zipcode": "98103",
+    "lat": 47.6062,
+    "long": -122.3321,
+    "sqft_living15": 2000,
+    "sqft_lot15": 8000
+  }'
+
+# Test minimal prediction (core features only)
+curl -X POST http://localhost:8000/v1/predict/minimal \
   -H "Content-Type: application/json" \
   -d '{
     "bedrooms": 3,
@@ -118,16 +159,6 @@ curl -X POST http://localhost:8000/v1/predict \
     "sqft_basement": 500,
     "zipcode": "98103"
   }'
-
-# Test minimal prediction
-curl -X POST http://localhost:8000/v1/predict/minimal \
-  -H "Content-Type: application/json" \
-  -d '{
-    "bedrooms": 3,
-    "bathrooms": 2.5,
-    "sqft_living": 2000,
-    "zipcode": "98103"
-  }'
 ```
 
 **V2 Endpoints (MLflow-based models):**
@@ -135,8 +166,32 @@ curl -X POST http://localhost:8000/v1/predict/minimal \
 # Get V2 API information
 curl http://localhost:8000/v2/info
 
-# Test V2 prediction (same payload format)
+# Test V2 prediction with FULL features (all required fields)
 curl -X POST http://localhost:8000/v2/predict \
+  -H "Content-Type: application/json" \
+  -d '{
+    "bedrooms": 3,
+    "bathrooms": 2.5,
+    "sqft_living": 2000,
+    "sqft_lot": 8000,
+    "floors": 2,
+    "waterfront": 0,
+    "view": 0,
+    "condition": 3,
+    "grade": 7,
+    "sqft_above": 1500,
+    "sqft_basement": 500,
+    "yr_built": 2000,
+    "yr_renovated": 0,
+    "zipcode": "98103",
+    "lat": 47.6062,
+    "long": -122.3321,
+    "sqft_living15": 2000,
+    "sqft_lot15": 8000
+  }'
+
+# Test V2 minimal prediction (core features only)
+curl -X POST http://localhost:8000/v2/predict/minimal \
   -H "Content-Type: application/json" \
   -d '{
     "bedrooms": 3,
