@@ -6,11 +6,51 @@ from create_champion_model_with_artifacts.py to avoid logging "none values"
 and unnecessary complexity.
 """
 
+import os
 from typing import Any, Dict, Optional
 
 import mlflow
 import mlflow.sklearn
 import pandas as pd
+
+
+def setup_docker_mlflow_environment(env_file_path: str = ".env") -> None:
+    """Setup Docker/MinIO environment variables for MLflow from .env file.
+
+    Args:
+        env_file_path: Path to .env file containing Docker/MinIO configuration
+
+    Raises:
+        ValueError: If required environment variables are missing
+    """
+    from dotenv import load_dotenv
+
+    load_dotenv(env_file_path)
+
+    # Get required values from .env
+    minio_user = os.getenv("MINIO_ROOT_USER")
+    minio_password = os.getenv("MINIO_ROOT_PASSWORD")
+    minio_port = os.getenv("MINIO_PORT", "9000")
+    aws_region = os.getenv("AWS_DEFAULT_REGION", "us-east-1")
+
+    # Validate required values
+    if not minio_user or not minio_password:
+        raise ValueError(
+            "MINIO_ROOT_USER and MINIO_ROOT_PASSWORD must be set in .env file"
+        )
+
+    # Set environment variables for MLflow Docker setup
+    required_vars = {
+        "MLFLOW_S3_ENDPOINT_URL": f"http://localhost:{minio_port}",
+        "AWS_ACCESS_KEY_ID": minio_user,
+        "AWS_SECRET_ACCESS_KEY": minio_password,
+        "AWS_DEFAULT_REGION": aws_region,
+        "MLFLOW_S3_IGNORE_TLS": "true",
+        "MLFLOW_TRACKING_URI": "http://localhost:5000",
+    }
+
+    for key, value in required_vars.items():
+        os.environ[key] = value
 
 
 def setup_mlflow(

@@ -44,6 +44,7 @@ from .core.evaluation import (
     ModelEvaluator,
     calculate_overfitting_metrics,
 )
+from .core.mlflow_utils import setup_docker_mlflow_environment, setup_mlflow
 
 # Make key classes and functions easily accessible
 from .core.models import ModelFactory, create_model_pipeline, get_quick_models
@@ -60,6 +61,8 @@ __all__ = [
     "calculate_overfitting_metrics",
     "DataProcessor",
     "load_and_prepare_data",
+    "setup_docker_mlflow_environment",
+    "setup_mlflow",
     # Configuration classes
     "DataConfig",
     "ModelConfig",
