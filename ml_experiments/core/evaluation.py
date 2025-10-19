@@ -8,10 +8,34 @@ across multiple experiment scripts.
 from typing import Any, Dict, Optional
 
 import mlflow
+import mlflow.data
 import numpy as np
 import pandas as pd
-from sklearn.metrics import mean_absolute_error, mean_squared_error, r2_score
+from sklearn.metrics import (
+    mean_absolute_error,
+    mean_squared_error,
+    r2_score,
+    mean_absolute_percentage_error,
+)
 from sklearn.model_selection import KFold, cross_validate
+
+
+def weighted_mean_absolute_percentage_error(
+    y_true: pd.Series, y_pred: np.ndarray
+) -> float:
+    """Calculate Weighted Mean Absolute Percentage Error (WMAPE).
+
+    WMAPE is more robust than MAPE as it weights errors by the magnitude of actual values,
+    making it less sensitive to small actual values and outliers.
+
+    Args:
+        y_true: True target values
+        y_pred: Predicted values
+
+    Returns:
+        WMAPE as a percentage (0-100)
+    """
+    return (np.sum(np.abs(y_true - y_pred)) / np.sum(np.abs(y_true))) * 100
 
 
 def calculate_metrics(y_true: pd.Series, y_pred: np.ndarray) -> Dict[str, float]:
@@ -28,8 +52,17 @@ def calculate_metrics(y_true: pd.Series, y_pred: np.ndarray) -> Dict[str, float]
     mse = mean_squared_error(y_true, y_pred)
     rmse = np.sqrt(mse)
     r2 = r2_score(y_true, y_pred)
+    mape = mean_absolute_percentage_error(y_true, y_pred) * 100  # Convert to percentage
+    wmape = weighted_mean_absolute_percentage_error(y_true, y_pred)
 
-    return {"mae": mae, "mse": mse, "rmse": rmse, "r2": r2}
+    return {
+        "mae": mae,
+        "mse": mse,
+        "rmse": rmse,
+        "r2": r2,
+        "mape": mape,
+        "wmape": wmape,
+    }
 
 
 def calculate_overfitting_metrics(
@@ -58,10 +91,27 @@ def calculate_overfitting_metrics(
             train_metrics["r2"] / test_metrics["r2"]
         )
 
+    # MAPE overfitting ratio (test/train - higher is worse)
+    if train_metrics["mape"] > 0:
+        overfitting_metrics["overfitting_ratio_mape"] = (
+            test_metrics["mape"] / train_metrics["mape"]
+        )
+
+    # WMAPE overfitting ratio (test/train - higher is worse)
+    if train_metrics["wmape"] > 0:
+        overfitting_metrics["overfitting_ratio_wmape"] = (
+            test_metrics["wmape"] / train_metrics["wmape"]
+        )
+
     # Performance gap metrics
     overfitting_metrics["r2_gap"] = train_metrics["r2"] - test_metrics["r2"]
+    overfitting_metrics["overfitting_r2_diff"] = (
+        train_metrics["r2"] - test_metrics["r2"]
+    )  # Alias for consistency
     overfitting_metrics["mae_gap"] = test_metrics["mae"] - train_metrics["mae"]
     overfitting_metrics["rmse_gap"] = test_metrics["rmse"] - train_metrics["rmse"]
+    overfitting_metrics["mape_gap"] = test_metrics["mape"] - train_metrics["mape"]
+    overfitting_metrics["wmape_gap"] = test_metrics["wmape"] - train_metrics["wmape"]
 
     return overfitting_metrics
 
@@ -131,13 +181,18 @@ def format_metrics_for_display(
         elif metric_name in ["r2"]:
             # Format as percentage or decimal
             formatted[key] = f"{value:.4f}"
+        elif metric_name in ["mape", "wmape"]:
+            # Format percentage metrics
+            formatted[key] = f"{value:.2f}%"
         elif "ratio" in metric_name:
             # Format ratios
             formatted[key] = f"{value:.4f}"
         elif "gap" in metric_name:
             # Format gaps
-            if metric_name == "r2_gap":
+            if metric_name in ["r2_gap", "overfitting_r2_diff"]:
                 formatted[key] = f"{value:.4f}"
+            elif metric_name in ["mape_gap", "wmape_gap"]:
+                formatted[key] = f"{value:.2f}%"
             else:
                 formatted[key] = f"${value:,.2f}"
         else:
@@ -207,7 +262,14 @@ class ModelEvaluator:
         Args:
             metrics_to_track: List of metrics to track (default: all standard metrics)
         """
-        self.metrics_to_track = metrics_to_track or ["mae", "mse", "rmse", "r2"]
+        self.metrics_to_track = metrics_to_track or [
+            "mae",
+            "mse",
+            "rmse",
+            "r2",
+            "mape",
+            "wmape",
+        ]
         self.evaluation_history = []
 
     def evaluate(
@@ -218,6 +280,7 @@ class ModelEvaluator:
         y_train: pd.Series,
         y_test: pd.Series,
         model_name: str = "model",
+        log_datasets: bool = True,
     ) -> Dict[str, Any]:
         """Evaluate a model and store results.
 
@@ -228,6 +291,7 @@ class ModelEvaluator:
             y_train: Training targets
             y_test: Test targets
             model_name: Name for this model evaluation
+            log_datasets: Whether to log datasets to MLflow (default: True)
 
         Returns:
             Evaluation results dictionary
@@ -249,6 +313,30 @@ class ModelEvaluator:
             # Log overfitting metrics
             for metric_name, value in results["overfitting_metrics"].items():
                 mlflow.log_metric(metric_name, value)
+
+            # Log datasets to MLflow if requested
+            if log_datasets:
+                try:
+                    # Create and log training dataset
+                    train_dataset = mlflow.data.from_pandas(
+                        x_train.join(y_train),
+                        source="kc_house_data_processed",
+                        name="training_data",
+                        targets="price",
+                    )
+                    mlflow.log_input(train_dataset, context="training")
+
+                    # Create and log test dataset
+                    test_dataset = mlflow.data.from_pandas(
+                        x_test.join(y_test),
+                        source="kc_house_data_processed",
+                        name="test_data",
+                        targets="price",
+                    )
+                    mlflow.log_input(test_dataset, context="validation")
+
+                except Exception as e:
+                    print(f"Warning: Failed to log datasets to MLflow: {e}")
 
         # Store in history
         self.evaluation_history.append(results)
