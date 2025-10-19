@@ -5,10 +5,12 @@ This module provides V2 endpoints that use MLflow champion models
 instead of pickle files, while maintaining the same API structure as V1.
 """
 
+import time
 from fastapi import APIRouter, HTTPException, status
 
 from ..core.exceptions import DemographicDataError, PredictionError
 from ..core.mlflow_predictor import MLflowModelLoadError, get_mlflow_predictor
+from ..core.prediction_logger import prediction_logger
 from ..core.models import (
     HouseFeaturesRequest,
     MinimalHouseFeaturesRequest,
@@ -60,6 +62,8 @@ async def predict_house_price(request: HouseFeaturesRequest):
     Raises:
         HTTPException: If prediction fails due to missing data or model errors
     """
+    start_time = time.time()
+
     try:
         # Convert request to dictionary
         house_data = request.dict()
@@ -67,6 +71,21 @@ async def predict_house_price(request: HouseFeaturesRequest):
         # Make prediction using MLflow predictor
         predictor = get_mlflow_predictor()
         result = predictor.predict(house_data)
+
+        # Calculate processing time
+        processing_time_ms = (time.time() - start_time) * 1000
+
+        # Log prediction asynchronously (don't await to avoid blocking)
+        import asyncio
+
+        asyncio.create_task(
+            prediction_logger.log_prediction(
+                input_data=house_data,
+                prediction_result=result,
+                endpoint="/v2/predict",
+                processing_time_ms=processing_time_ms,
+            )
+        )
 
         return PredictionResponse(**result)
 
@@ -122,6 +141,8 @@ async def predict_house_price_minimal(request: MinimalHouseFeaturesRequest):
     Raises:
         HTTPException: If prediction fails due to missing data or model errors
     """
+    start_time = time.time()
+
     try:
         # Convert request to dictionary
         house_data = request.dict()
@@ -129,6 +150,21 @@ async def predict_house_price_minimal(request: MinimalHouseFeaturesRequest):
         # Make minimal prediction using MLflow predictor
         predictor = get_mlflow_predictor()
         result = predictor.predict_minimal(house_data)
+
+        # Calculate processing time
+        processing_time_ms = (time.time() - start_time) * 1000
+
+        # Log prediction asynchronously (don't await to avoid blocking)
+        import asyncio
+
+        asyncio.create_task(
+            prediction_logger.log_prediction(
+                input_data=house_data,
+                prediction_result=result,
+                endpoint="/v2/predict/minimal",
+                processing_time_ms=processing_time_ms,
+            )
+        )
 
         return PredictionResponse(**result)
 

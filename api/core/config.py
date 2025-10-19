@@ -45,6 +45,9 @@ class Settings(BaseSettings):
     max_request_size: int = 1024 * 1024  # 1MB
     request_timeout: int = 30  # seconds
 
+    # Prediction Logging Configuration
+    enable_prediction_logging: bool = True
+
     @field_validator("demographics_data_path")
     @classmethod
     def validate_file_paths(cls, v):

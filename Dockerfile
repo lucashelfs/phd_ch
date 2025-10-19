@@ -32,6 +32,9 @@ COPY --chown=appuser:appuser api/ ./api/
 COPY --chown=appuser:appuser model/ ./model/
 COPY --chown=appuser:appuser data/ ./data/
 
+# Create logs directory with proper permissions
+RUN mkdir -p /app/logs && chown -R appuser:appuser /app/logs
+
 # Switch to non-root user
 USER appuser
 

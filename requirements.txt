@@ -12,3 +12,4 @@ matplotlib
 seaborn
 python-multipart
 boto3
+aiosqlite

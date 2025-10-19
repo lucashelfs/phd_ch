@@ -5,10 +5,12 @@ This module defines the FastAPI endpoints for version 1 of the API,
 including prediction endpoints and model information.
 """
 
+import time
 from fastapi import APIRouter, HTTPException, status
 
 from ..core.exceptions import APIException, DemographicDataError, PredictionError
 from ..core.predictor import predictor
+from ..core.prediction_logger import prediction_logger
 from ..core.models import (
     HouseFeaturesRequest,
     MinimalHouseFeaturesRequest,
@@ -57,12 +59,29 @@ async def predict_house_price(house_data: HouseFeaturesRequest):
         HTTPException: For validation errors, missing demographic data,
                       or prediction failures
     """
+    start_time = time.time()
+
     try:
         # Convert Pydantic model to dictionary
         house_dict = house_data.dict()
 
         # Make prediction
         prediction_result = predictor.predict(house_dict)
+
+        # Calculate processing time
+        processing_time_ms = (time.time() - start_time) * 1000
+
+        # Log prediction asynchronously (don't await to avoid blocking)
+        import asyncio
+
+        asyncio.create_task(
+            prediction_logger.log_prediction(
+                input_data=house_dict,
+                prediction_result=prediction_result,
+                endpoint="/v1/predict",
+                processing_time_ms=processing_time_ms,
+            )
+        )
 
         # Return structured response
         return PredictionResponse(**prediction_result)
@@ -112,12 +131,29 @@ async def predict_house_price_minimal(house_data: MinimalHouseFeaturesRequest):
         HTTPException: For validation errors, missing demographic data,
                       or prediction failures
     """
+    start_time = time.time()
+
     try:
         # Convert Pydantic model to dictionary
         house_dict = house_data.dict()
 
         # Make minimal prediction
         prediction_result = predictor.predict_minimal(house_dict)
+
+        # Calculate processing time
+        processing_time_ms = (time.time() - start_time) * 1000
+
+        # Log prediction asynchronously (don't await to avoid blocking)
+        import asyncio
+
+        asyncio.create_task(
+            prediction_logger.log_prediction(
+                input_data=house_dict,
+                prediction_result=prediction_result,
+                endpoint="/v1/predict/minimal",
+                processing_time_ms=processing_time_ms,
+            )
+        )
 
         # Return structured response
         return PredictionResponse(**prediction_result)

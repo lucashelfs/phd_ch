@@ -1,6 +1,7 @@
 volumes:
   pgdata:
   minio-data:
+  prediction-logs:
 
 services:
   postgres:
@@ -58,6 +59,16 @@ services:
     restart: "no"
     networks:
       - real-estate-network
+
+  init-prediction-db:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: init-prediction-db
+    volumes:
+      - prediction-logs:/app/logs
+    command: python ./api/init_prediction_db.py
+    restart: "no"
 
   mlflow:
     image: ghcr.io/mlflow/mlflow:${MLFLOW_VERSION}
@@ -118,6 +129,8 @@ services:
     depends_on:
       mlflow:
         condition: service_healthy
+      init-prediction-db:
+        condition: service_completed_successfully
     environment:
       # MLflow connection settings
       MLFLOW_TRACKING_URI: ${MLFLOW_TRACKING_URI}
@@ -133,9 +146,14 @@ services:
       DEBUG: ${DEBUG}
       CHAMPION_MODEL_MLFLOW_URI: ${CHAMPION_MODEL_MLFLOW_URI}
 
+      # Prediction Logging
+      ENABLE_PREDICTION_LOGGING: ${ENABLE_PREDICTION_LOGGING:-true}
+
       # Suppress Matplotlib user config dir warnings
       MPLCONFIGDIR: /tmp/matplotlib
 
+    volumes:
+      - prediction-logs:/app/logs
     ports:
       - "${API_PORT}:8000"
     healthcheck:
